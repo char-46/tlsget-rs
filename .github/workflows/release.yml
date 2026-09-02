@@ -1,0 +1,101 @@
+name: build-release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, pkg: win32-x64, bin: tlsget.exe, method: cargo }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, pkg: linux-x64, bin: tlsget, method: cargo }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl, pkg: linux-musl-x64, bin: tlsget, method: docker-alpine }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, pkg: linux-arm64, bin: tlsget, method: cargo }
+          - { os: macos-latest, target: x86_64-apple-darwin, pkg: darwin-x64, bin: tlsget, method: cargo }
+          - { os: macos-latest, target: aarch64-apple-darwin, pkg: darwin-arm64, bin: tlsget, method: cargo }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build deps (Linux)
+        if: runner.os == 'Linux' && matrix.method == 'cargo'
+        run: sudo apt-get update && sudo apt-get install -y cmake perl nasm
+
+      - name: Install build deps (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install --no-progress -y nasm strawberryperl
+          echo "C:\Program Files\NASM" | Out-File -FilePath $env:GITHUB_PATH -Append
+          echo "C:\Strawberry\perl\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+      - uses: dtolnay/rust-toolchain@stable
+        if: matrix.method == 'cargo'
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Build (cargo)
+        if: matrix.method == 'cargo'
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Build (musl via alpine docker)
+        if: matrix.method == 'docker-alpine'
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src rust:alpine sh -c "
+            apk add --no-cache cmake make perl && rustup target add x86_64-unknown-linux-musl &&
+            cargo build --release --target x86_64-unknown-linux-musl"
+
+      - name: Stage & pack npm tarball
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          [ "$VERSION" = "${GITHUB_REF_NAME}" ] || [ -z "$GITHUB_REF_NAME" ] && VERSION="0.0.0-dev"
+          rm -rf stage && mkdir -p stage/pkg
+          cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" stage/pkg/
+          cp platforms/${{ matrix.pkg }}/package.json stage/pkg/
+          node -e "const fs=require('fs');const p='stage/pkg/package.json';const j=JSON.parse(fs.readFileSync(p));j.version=process.argv[1];fs.writeFileSync(p,JSON.stringify(j,null,2))" "$VERSION"
+          chmod +x stage/pkg/tlsget* || true
+          cd stage/pkg && npm pack --pack-destination ..
+          mv ../char46-tlsget-rs-${{ matrix.pkg }}-*.tgz ../../${{ matrix.pkg }}.tgz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.pkg }}.tgz
+          path: ${{ matrix.pkg }}.tgz
+          if-no-files-found: error
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - name: Publish platform packages
+        run: |
+          for f in *.tgz; do
+            echo "publishing $f"
+            npm publish "$f" --access public || echo "FAILED: $f"
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish main package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cd npm
+          node -e "const fs=require('fs');const p='package.json';const j=JSON.parse(fs.readFileSync(p));j.version=process.argv[1];
+            for (const k of Object.keys(j.optionalDependencies||{})) j.optionalDependencies[k]=process.argv[1];
+            fs.writeFileSync(p,JSON.stringify(j,null,2))" "$VERSION"
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

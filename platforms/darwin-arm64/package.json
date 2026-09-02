@@ -1,0 +1,8 @@
+{
+  "name": "@char46/tlsget-rs-darwin-arm64",
+  "version": "1.0.0",
+  "description": "tlsget binary for darwin-arm64",
+  "license": "MIT",
+  "os": ["darwin"],
+  "cpu": ["arm64"]
+}

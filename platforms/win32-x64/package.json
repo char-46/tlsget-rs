@@ -1,0 +1,8 @@
+{
+  "name": "@char46/tlsget-rs-win32-x64",
+  "version": "1.0.0",
+  "description": "tlsget binary for win32-x64",
+  "license": "MIT",
+  "os": ["win32"],
+  "cpu": ["x64"]
+}

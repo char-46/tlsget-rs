@@ -1,0 +1,8 @@
+{
+  "name": "@char46/tlsget-rs-linux-arm64",
+  "version": "1.0.0",
+  "description": "tlsget binary for linux-arm64",
+  "license": "MIT",
+  "os": ["linux"],
+  "cpu": ["arm64"]
+}

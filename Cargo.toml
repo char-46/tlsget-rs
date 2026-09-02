@@ -1,0 +1,19 @@
+[package]
+name = "tlsget"
+version = "1.0.0"
+edition = "2021"
+description = "One-shot TLS-fingerprint-impersonated HTTP GET CLI (Chrome emulation via wreq)"
+license = "Apache-2.0"
+
+[dependencies]
+wreq = { version = "0.16", features = ["gzip", "brotli", "zstd", "deflate", "socks", "charset"] }
+wreq-util = "0.2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+opt-level = "z"

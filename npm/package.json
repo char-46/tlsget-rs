@@ -1,0 +1,39 @@
+{
+  "name": "@char46/tlsget-rs",
+  "version": "1.0.0",
+  "description": "One-shot TLS-fingerprint (Chrome) HTTP GET binary with npm distribution",
+  "license": "Apache-2.0",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/char-46/tlsget-rs.git"
+  },
+  "optionalDependencies": {
+    "@char46/tlsget-rs-win32-x64": "1.0.0",
+    "@char46/tlsget-rs-linux-x64": "1.0.0",
+    "@char46/tlsget-rs-linux-musl-x64": "1.0.0",
+    "@char46/tlsget-rs-linux-arm64": "1.0.0",
+    "@char46/tlsget-rs-darwin-x64": "1.0.0",
+    "@char46/tlsget-rs-darwin-arm64": "1.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "tls",
+    "fingerprint",
+    "chrome",
+    "http",
+    "impersonate",
+    "binary"
+  ]
+}
