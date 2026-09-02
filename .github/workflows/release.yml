@@ -46,11 +46,11 @@ jobs:
         if: matrix.method == 'cargo'
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Build (musl via alpine docker)
+      - name: Build (musl via cross docker)
         if: matrix.method == 'docker-alpine'
         run: |
-          docker run --rm -v "$PWD:/src" -w /src rust:alpine sh -c "
-            apk add --no-cache cmake make perl git g++ clang-dev &&
+          docker run --rm -v "$PWD:/src" -w /src messense/rust-musl-cross:x86_64-musl sh -c "
+            sudo apt-get update -qq && sudo apt-get install -y -qq cmake perl git g++ clang libclang-dev &&
             cargo build --release --target x86_64-unknown-linux-musl"
 
       - name: Stage & pack npm tarball
