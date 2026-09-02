@@ -85,14 +85,16 @@ jobs:
           merge-multiple: true
       - name: Publish platform packages
         run: |
+          npm config set //registry.npmjs.org/:_authToken "$NODE_AUTH_TOKEN"
           for f in *.tgz; do
             echo "publishing $f"
-            npm publish "$f" --access public || echo "FAILED: $f"
+            npm publish "$f" --access public
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish main package
         run: |
+          npm config set //registry.npmjs.org/:_authToken "$NODE_AUTH_TOKEN"
           VERSION="${GITHUB_REF_NAME#v}"
           cd npm
           node -e "const fs=require('fs');const p='package.json';const j=JSON.parse(fs.readFileSync(p));j.version=process.argv[1];
